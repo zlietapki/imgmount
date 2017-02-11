@@ -2,10 +2,6 @@
 use strict;
 use warnings;
 
-#install
-#sudo ln -s $(readlink -f imgmount.pl) /usr/local/bin/imgmount
-#sudo ln -s $(readlink -f imgmount.pl) /usr/local/bin/imgumount
-
 my $MOUNT_DIR_PREFIX = '/mnt/imgmount';
 my $MAX_MOUNT_PARTITIONS = 15;
 
