@@ -7,7 +7,7 @@ use warnings;
 #sudo ln -s $(readlink -f imgmount.pl) /usr/local/bin/imgumount
 
 my $MOUNT_DIR_PREFIX = '/mnt/imgmount';
-my $MAX_MOUNT_PARTITIONS = 10;
+my $MAX_MOUNT_PARTITIONS = 15;
 
 if ($0 =~ 'imgmount') {
 	my $img = $ARGV[0]
@@ -27,6 +27,11 @@ for (my $i = 0; $i < $MAX_MOUNT_PARTITIONS; $i++) {
 	my $mounted_point = $MOUNT_DIR_PREFIX . $i;
 	if ($busy_mnt_points{ $mounted_point }) {
 		system("sudo umount $mounted_point");
+		#supress warning for non empty dir
+		open my $olderr, '>&', \*STDERR or die $!;
+		open STDERR, ">/dev/null";
+		system("sudo rmdir $mounted_point"); #will work only on empty dir
+		open STDERR, '>&', $olderr or die $!;
 	}
 }
 exit 0;
@@ -35,15 +40,15 @@ sub get_img_info {
 	my ($img) = @_;
 	-f $img or usage();
 
-	my $out = system("fdisk --list $img");
+	my $out = `fdisk --list $img`;
 	my @out = split("\n", $out);
 	my ($sector_size, $now_is_disk_info, @partitions);
 	foreach my $str (@out) {
-		if ($str =~ /Units: sectors of 1 \* \d+ = (\d+) bytes/x) {
+		if ($str =~ /Units: sectors of 1 \* \d+ = (\d+) bytes/) {
 			$sector_size = $1;
 			next;
 		}
-		if ($str =~ /Device\s+Boot\s+Start/x) {
+		if ($str =~ /Device\s+Boot\s+Start/) {
 			$now_is_disk_info = 1;
 			next;
 		}
@@ -79,11 +84,11 @@ sub mount_partition {
 }
 
 sub get_all_mounts {
-	my $out = system("cat /proc/mounts");
+	my $out = `cat /proc/mounts`;
 	my @out = split("\n", $out);
 	my %busy_mnt_points;
 	foreach my $str (@out) {
-		my ($src, $mnt_point) = $str =~ /^([^\s]+) ([^\s]+)/x;
+		my ($src, $mnt_point) = $str =~ /^([^\s]+) ([^\s]+)/;
 		$busy_mnt_points{ $mnt_point } = $src;
 	}
 	return %busy_mnt_points;
